@@ -1,3 +1,4 @@
+import calendar
 import hashlib
 import json
 import os
@@ -9,12 +10,19 @@ CHAT_ID = os.environ["TELEGRAM_CHAT_ID"]
 USERS = [u.strip().lstrip("@") for u in os.environ["X_USERS"].split(",") if u.strip()]
 HEADERS = {"User-Agent": "Mozilla/5.0"}
 STATE = "seen.json"
+POSTS = "posts.json"
 
 try:
     with open(STATE) as f:
         seen = json.load(f)
 except Exception:
     seen = {}
+
+try:
+    with open(POSTS) as f:
+        by_link = {p["link"]: p for p in json.load(f)}
+except Exception:
+    by_link = {}
 
 def send(text):
     r = requests.post(
@@ -36,6 +44,10 @@ for user in USERS:
         if not ids:
             print("No posts returned for account", key)
             continue
+        for e in feed.entries:
+            link = e.link.split("#")[0].replace("nitter.mie.foundation", "x.com")
+            ts = calendar.timegm(e.published_parsed) if e.get("published_parsed") else 0
+            by_link[link] = {"user": user, "text": e.title, "link": link, "time": ts}
         if key not in seen:
             seen[key] = ids
             print("First run for account", key, "- remembering", len(ids), "posts")
@@ -51,3 +63,7 @@ for user in USERS:
 
 with open(STATE, "w") as f:
     json.dump(seen, f)
+
+latest = sorted(by_link.values(), key=lambda p: p["time"], reverse=True)[:60]
+with open(POSTS, "w") as f:
+    json.dump(latest, f)
