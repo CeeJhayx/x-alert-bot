@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>X Post Feed</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --text:#111; --muted:#667; --link:#1a6fe0; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg:#0e1116; --card:#181c23; --text:#e8eaed; --muted:#8b93a1; --link:#5ca2ff; }
+  }
+  body { margin:0; padding:16px; background:var(--bg); color:var(--text); font-family:system-ui,sans-serif; }
+  main { max-width:640px; margin:0 auto; }
+  h1 { font-size:1.3rem; }
+  .card { background:var(--card); border-radius:12px; padding:14px; margin:12px 0; }
+  .user { font-weight:600; }
+  .time { color:var(--muted); font-size:.85rem; margin:2px 0 8px; }
+  .text { white-space:pre-wrap; word-wrap:break-word; }
+  a { color:var(--link); }
+  #status { color:var(--muted); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Latest posts</h1>
+  <p id="status">Loading…</p>
+  <div id="list"></div>
+</main>
+<script>
+async function load() {
+  const status = document.getElementById("status");
+  const list = document.getElementById("list");
+  try {
+    const res = await fetch("posts.json?t=" + Date.now());
+    const posts = await res.json();
+    list.innerHTML = "";
+    status.textContent = posts.length ? "Updated " + new Date().toLocaleTimeString() : "No posts yet.";
+    for (const p of posts) {
+      const card = document.createElement("div");
+      card.className = "card";
+      const u = document.createElement("div");
+      u.className = "user";
+      u.textContent = "@" + p.user;
+      const t = document.createElement("div");
+      t.className = "time";
+      t.textContent = p.time ? new Date(p.time * 1000).toLocaleString() : "";
+      const x = document.createElement("div");
+      x.className = "text";
+      x.textContent = p.text;
+      const a = document.createElement("a");
+      a.href = p.link;
+      a.target = "_blank";
+      a.rel = "noopener";
+      a.textContent = "View on X";
+      card.append(u, t, x, a);
+      list.appendChild(card);
+    }
+  } catch (err) {
+    status.textContent = "Could not load posts yet. Try again in a few minutes.";
+  }
+}
+load();
+setInterval(load, 60000);
+</script>
+</body>
+</html>
